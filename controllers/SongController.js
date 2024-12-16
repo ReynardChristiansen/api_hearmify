@@ -1,4 +1,8 @@
 const pool = require('../db');
+const CryptoJS = require('crypto-js');
+const jwt = require('jsonwebtoken');
+const SECRET_KEY = process.env.JWT_SECRET;
+
 
 const isValidJson = (str) => {
     try {
@@ -6,6 +10,120 @@ const isValidJson = (str) => {
         return true;
     } catch (e) {
         return false;
+    }
+};
+
+const login = async (req, res) => {
+    const { name, password } = req.body;
+
+    // Validate required fields
+    if (!name || !password) {
+        return res.status(400).json({ error: 'Name and password are required' });
+    }
+
+    try {
+        // Check if the user exists in the database
+        const [userResult] = await pool.query('SELECT * FROM users WHERE name = ?', [name]);
+
+        if (userResult.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = userResult[0];
+
+        // Hash the provided password to compare with the stored hash
+        const hashedPassword = CryptoJS.SHA256(password).toString();
+
+        if (hashedPassword !== user.password) {
+            return res.status(401).json({ error: 'Invalid password' });
+        }
+
+        // Generate a JWT
+        const token = jwt.sign(
+            {
+                id: user.id,
+                name: user.name,
+                role: user.role,
+            },
+            SECRET_KEY,
+            { expiresIn: '7d' } // Token expires in 1 hour
+        );
+
+        return res.status(200).json({
+            message: 'Login successful',
+            token: token,
+        });
+    } catch (error) {
+        console.error('Error logging in:', error); // Log the error for debugging
+        return res.status(500).json({ error: 'Failed to login' }); // Return a generic error to the client
+    }
+};
+
+const deleteSong = async (req, res) => {
+    const { id } = req.params; // Get the song ID from the URL parameter
+
+    try {
+        // Check if the song exists
+        const [result] = await pool.query('SELECT * FROM songs WHERE id = ?', [id]);
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'No such song to delete' });
+        }
+
+        // Delete the song from the database
+        const [deleteResult] = await pool.query('DELETE FROM songs WHERE id = ?', [id]);
+
+        if (deleteResult.affectedRows === 0) {
+            return res.status(404).json({ error: 'No such song to delete' });
+        }
+
+        return res.status(200).json({
+            message: 'Song deleted successfully',
+            Id: id,
+        });
+    } catch (error) {
+        console.error('Error deleting the song:', error); // Log the error for debugging
+        return res.status(500).json({ error: 'Failed to delete the song' }); // Return a generic error to the client
+    }
+};
+
+const registerUser = async (req, res) => {
+    const { name, password, role } = req.body;
+
+    // Validate required fields
+    if (!name || !password) {
+        return res.status(400).json({ error: 'Name and password are required' });
+    }
+
+    // Validate role, if provided
+    if (role && role !== 'admin' && role !== 'user') {
+        return res.status(400).json({ error: 'Invalid role. Allowed roles are "admin" or "user"' });
+    }
+
+    try {
+        // Check if the username already exists
+        const [existingUser] = await pool.query('SELECT * FROM users WHERE name = ?', [name]);
+        if (existingUser.length > 0) {
+            return res.status(409).json({ error: 'User already exists' }); // Conflict error
+        }
+
+        // Hash the password using CryptoJS SHA256
+        const hashedPassword = CryptoJS.SHA256(password).toString();
+
+        // Insert the new user into the database
+        const [result] = await pool.query(
+            'INSERT INTO users (name, password, role) VALUES (?, ?, ?)',
+            [name, hashedPassword, role || 'user'] // Default role is 'user'
+        );
+
+        // Respond with success and the new user ID
+        return res.status(201).json({
+            message: 'User registered successfully',
+            userId: result.insertId,
+        });
+    } catch (error) {
+        console.error('Error registering user:', error); // Log the error for debugging
+        return res.status(500).json({ error: 'Failed to register user' }); // Return generic error to client
     }
 };
 
@@ -153,5 +271,8 @@ module.exports = {
     getSongById,
     getAllSongs,
     createSong,
-    updateSong
+    updateSong,
+    registerUser,
+    login,
+    deleteSong
 };
