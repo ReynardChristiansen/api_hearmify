@@ -46,7 +46,7 @@ const login = async (req, res) => {
                 role: user.role,
             },
             SECRET_KEY,
-            { expiresIn: '7d' } // Token expires in 1 hour
+            { expiresIn: '30d' } // Token expires in 1 hour
         );
 
         return res.status(200).json({
