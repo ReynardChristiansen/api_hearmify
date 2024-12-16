@@ -13,6 +13,31 @@ const isValidJson = (str) => {
     }
 };
 
+const getUser = async (req, res) => {
+    const userId = req.user.id;  // Get the user ID from the authenticated JWT token
+
+    try {
+        // Query the database for the user with the provided user ID
+        const [userResult] = await pool.query('SELECT id, name, role FROM users WHERE id = ?', [userId]);
+
+        if (userResult.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const user = userResult[0];  // Get the first user (as there should be only one result)
+
+        return res.status(200).json({
+            id: user.id,
+            name: user.name,
+            role: user.role,
+        });
+
+    } catch (error) {
+        console.error('Error querying the database:', error);  // Log the error for debugging
+        return res.status(500).json({ error: 'Database query failed' });  // Return generic error to client
+    }
+};
+
 const login = async (req, res) => {
     const { name, password } = req.body;
 
@@ -275,5 +300,6 @@ module.exports = {
     updateSong,
     registerUser,
     login,
-    deleteSong
+    deleteSong,
+    getUser
 };
