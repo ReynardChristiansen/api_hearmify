@@ -1,10 +1,10 @@
 const express = require('express');
-const { getSongById, getAllSongs } = require('../controllers/SongController');  // Import controller function
+const { getSongById, getAllSongs, createSong, updateSong } = require('../controllers/SongController'); // Import the updateSong function
 const router = express.Router();
 
-
-// Route to get a song by its ID
 router.get('/getSongById/:id', getSongById);
 router.get('/getAllSongs', getAllSongs);
+router.post('/createSong', createSong);
+router.put('/updateSong/:id', updateSong); // Add the PUT route for updating a song
 
 module.exports = router;
