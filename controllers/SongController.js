@@ -272,21 +272,38 @@ const getAllSongs = async (req, res) => {
     try {
         // Query the database for all songs
         const [rows] = await pool.query('SELECT * FROM songs');
-
         if (rows.length === 0) {
             return res.status(404).json({ error: "No Songs Found" });
         }
-
         // Safely handle lyrics and chords fields for all songs
         const songs = rows.map(song => {
+            let lyrics = [];
+            let chords = [];
+            // Handle lyrics field
+            if (Array.isArray(song.lyrics)) {
+                lyrics = song.lyrics;  // Already an array, no need to parse
+            } else if (isValidJson(song.lyrics)) {
+                lyrics = JSON.parse(song.lyrics);  // Parse the JSON string if it's not already an array
+            } else {
+                console.error('Invalid lyrics data:', song.lyrics);
+                lyrics = []; // Set to empty array if invalid
+            }
+            // Handle chords field
+            if (Array.isArray(song.chords)) {
+                chords = song.chords;  // Already an array, no need to parse
+            } else if (isValidJson(song.chords)) {
+                chords = JSON.parse(song.chords);  // Parse the JSON string if it's not already an array
+            } else {
+                console.error('Invalid chords data:', song.chords);
+                chords = []; // Set to empty array if invalid
+            }
             return {
                 id: song.id,
                 title: song.title,
+                lyrics: lyrics,
             };
         });
-
         return res.status(200).json(songs);  // Return all songs as JSON response
-
     } catch (error) {
         console.error('Error querying the database:', error);  // Log the error for debugging
         return res.status(500).json({ error: 'Database query failed' });  // Return generic error to client
