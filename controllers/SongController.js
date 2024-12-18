@@ -310,6 +310,52 @@ const getAllSongs = async (req, res) => {
     }
 };
 
+const getAllMember = async (req, res) => {
+    try {
+        // Query the database for all users
+        const [rows] = await pool.query('SELECT id, name, role FROM users');
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "No users found" });
+        }
+
+        // Return all users as JSON response
+        return res.status(200).json(rows);
+    } catch (error) {
+        console.error('Error querying the database:', error);  // Log the error for debugging
+        return res.status(500).json({ error: 'Database query failed' });  // Return generic error to client
+    }
+};
+
+// Change a user's role to 'admin'
+const changeRoleToAdmin = async (req, res) => {
+    const { id } = req.params;  // Get the user ID from the URL parameter
+
+    try {
+        // Check if the user exists
+        const [userResult] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+
+        if (userResult.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Update the user's role to 'admin'
+        const [updateResult] = await pool.query('UPDATE users SET role = ? WHERE id = ?', ['admin', id]);
+
+        if (updateResult.affectedRows === 0) {
+            return res.status(400).json({ error: 'Failed to change user role' });
+        }
+
+        return res.status(200).json({
+            message: 'User role changed to admin successfully',
+            userId: id,
+        });
+    } catch (error) {
+        console.error('Error changing user role:', error);  // Log the error for debugging
+        return res.status(500).json({ error: 'Failed to change user role' });  // Return a generic error to the client
+    }
+};
+
 module.exports = {
     getSongById,
     getAllSongs,
@@ -318,5 +364,7 @@ module.exports = {
     registerUser,
     login,
     deleteSong,
-    getUser
+    getUser,
+    getAllMember,
+    changeRoleToAdmin
 };
