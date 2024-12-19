@@ -19,6 +19,8 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.4.0",
-    "mysql2": "^3.11.5"
+    "mysql2": "^3.11.5",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^3.3.2"
   }
 }

@@ -327,6 +327,21 @@ const getAllMember = async (req, res) => {
     }
 };
 
+const addTesting = async (req, res) => {
+    try {
+        // Insert a new row into the Testing table
+        const [insertResult] = await pool.query('INSERT INTO Testing () VALUES ()');
+
+        return res.status(200).json({
+            message: 'Entry added to Testing table successfully',
+            testingId: insertResult.id, // Return the ID of the newly inserted entry
+        });
+    } catch (error) {
+        console.error('Error adding entry to Testing table:', error); // Log the error for debugging
+        return res.status(500).json({ error: 'Failed to add entry to Testing table' }); // Return a generic error to the client
+    }
+};
+
 // Change a user's role to 'admin'
 const changeRoleToAdmin = async (req, res) => {
     const { id } = req.params;  // Get the user ID from the URL parameter
@@ -366,5 +381,6 @@ module.exports = {
     deleteSong,
     getUser,
     getAllMember,
-    changeRoleToAdmin
+    changeRoleToAdmin,
+    addTesting
 };
